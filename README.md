@@ -24,5 +24,5 @@ a port by supplying the `PORT` env variable.
 ## Known bugs
 
 - The "Start new meeting" feature does not work
-- The behavour is weird when a user reachs a meeting
+- The behavour is weird when a user reachs a running meeting
 - The meeting information are not displayed
