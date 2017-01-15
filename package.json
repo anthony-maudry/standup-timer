@@ -1,0 +1,16 @@
+{
+  "name": "standup-timer",
+  "version": "0.0.0",
+  "description": "A timer for stand up meetings",
+  "main": "index.js",
+  "author": "Anthony Maudry",
+  "private": true,
+  "license": "BSD",
+  "dependencies": {
+    "express": "^4.14.0",
+    "socket.io": "^1.7.2"
+  },
+  "scripts": {
+    "start": "node index.js"
+  }
+}

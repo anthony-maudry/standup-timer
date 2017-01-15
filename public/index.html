@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Socket.IO Chat Example</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="pages">
+    <div class="page backdrop greetings no-display">
+        <div class="popin">
+            <p>Hello !</p>
+            <p>Who are you ?</p>
+            <form name="username" action="add user">
+                <p>
+                    <input type="text" name="username" class="focus-in">
+                    <button type="submit">GO</button>
+                </p>
+            </form>
+        </div>
+    </div>
+    <div class="page backdrop meeting-choice no-display">
+        <div class="popin">
+            <p>Nice to meet you <span data-content="username"></span> !</p>
+            <p>What team do you want to join ?</p>
+            <form name="meeting" action="join meeting">
+                <p>
+                    <input type="text" name="meeting" class="focus-in">
+                    <button type="submit">GO</button>
+                </p>
+            </form>
+        </div>
+    </div>
+    <div class="page meeting-idle no-display">
+        <div class="popin">
+            <p>We are waiting for your teammates.</p>
+            <p>When everybody is there click
+            <p>
+            <p>
+                <a href="javascript://" class="action-button" data-action="start meeting">Here</a>
+            </p>
+        </div>
+    </div>
+    <div class="page meeting-confirm no-display">
+        <div class="popin">
+            <p>Ok, the meeting will start when everybody will have confirmed.</p>
+        </div>
+    </div>
+    <div class="meeting-display no-display">
+        <ul class="meeting-display" data-content="meeting" data-template="meeting-display">
+        </ul>
+        <ul class="meeting-members" data-content="meeting.users" data-template="user-list-item"
+            data-loop></ul>
+    </div>
+    <div class="page ready-talking no-display">
+        <div class="popin">
+            <p>It's your turn !</p>
+            <p>When ready click</p>
+            <p>
+                <a href="javascript://" class="action-button" data-action="user start">Here</a>
+            </p>
+        </div>
+    </div>
+    <div class="page user-talking no-display">
+        <div class="popin">
+            <p><span data-content="user.talking"></span></p>
+            <svg width="160" height="160" xmlns="http://www.w3.org/2000/svg" class="timer" viewBox="0 0 160 160">
+                <g>
+                    <title>Layer 1</title>
+                    <circle id="circle" class="ring" r="69.85699" cy="81" cx="81" stroke-width="8"
+                            stroke="#6fdb6f" fill="none"></circle>
+                </g>
+            </svg>
+        </div>
+    </div>
+    <div class="page meeting-over no-display">
+        <div class="popin">
+            <p>The meeting is over.</p>
+            <p>Thank you !</p>
+            <p>To start a new stand-up click</p>
+            <p>
+                <a href="javascript://" class="action-button" data-action="new meeting" >Here</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/templates.js"></script>
+<script src="/main.js"></script>
+</body>
+</html>
