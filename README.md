@@ -4,21 +4,25 @@ A timer for stand ups
 
 ## How to use
 
-```
-$ cd socket.io
-$ npm install
-$ cd examples/chat
+```bash
+$ git clone git@github.com:anthony-maudry/standup-timer.git
+$ cd standup-timer
 $ npm install
 $ npm start
 ```
 
-And point your browser to `http://localhost:3000`. Optionally, specify
+And point your browser to `http://localhost:8000`. Optionally, specify
 a port by supplying the `PORT` env variable.
 
 ## Features
 
-- Multiple users can join a chat room by each entering a unique username
-on website load.
-- Users can type chat messages to the chat room.
-- A notification is sent to all users when a user joins or leaves
-the chatroom.
+- Multiple users can join a stand-up
+- Each user defines a user name and the name of the stand-up to join
+- The application will randomly design a user to speak.
+- Each user has two minutes to speak
+
+## Known bugs
+
+- The "Start new meeting" feature does not work
+- The behavour is weird when a user reachs a meeting
+- The meeting information are not displayed
