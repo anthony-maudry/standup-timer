@@ -138,9 +138,14 @@
     });
 
     socket.on('user talking', (data) => {
-        let username = data.user, time = data.time;
-        updateContent('user.talking', username === socket.username ? 'You' : username);
+        let username = data.user, time = data.time, me = (username === socket.username);
+        updateContent('user.talking', me ? 'You' : username);
         displayPage('user-talking');
+        if (me) {
+            document.querySelector('.done-button').classList.remove('no-display');
+        } else {
+            document.querySelector('.done-button').classList.add('no-display');
+        }
         userTalking(username, time);
     });
 
