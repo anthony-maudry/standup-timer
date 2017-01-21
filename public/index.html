@@ -46,12 +46,6 @@
             <p>Ok, the meeting will start when everybody will have confirmed.</p>
         </div>
     </div>
-    <div class="meeting-display no-display">
-        <ul class="meeting-display" data-content="meeting" data-template="meeting-display">
-        </ul>
-        <ul class="meeting-members" data-content="meeting.users" data-template="user-list-item"
-            data-loop></ul>
-    </div>
     <div class="page ready-talking no-display">
         <div class="popin">
             <p>It's your turn !</p>
@@ -71,7 +65,7 @@
                             stroke="#6fdb6f" fill="none"></circle>
                 </g>
             </svg>
-            <p>
+            <p class="done-button">
                 <a href="javascript://" class="action-button" data-action="user finished">I'm done</a>
             </p>
         </div>
@@ -85,6 +79,12 @@
                 <a href="javascript://" class="action-button" data-action="new meeting" >Here</a>
             </p>
         </div>
+    </div>
+    <div class="meeting-display">
+        <ul class="meeting-display" data-content="meeting" data-template="meeting-display">
+        </ul>
+        <ul class="meeting-members" data-content="meeting.users" data-template="user-list-item"
+            data-loop></ul>
     </div>
 </div>
 
