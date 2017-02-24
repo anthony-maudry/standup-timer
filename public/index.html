@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Socket.IO Chat Example</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="stylesheets/style.css">
+    <script src="libs/rx.all.js"></script>
 </head>
 <body>
 <div class="pages">
@@ -89,7 +90,9 @@
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-<script src="/templates.js"></script>
-<script src="/main.js"></script>
+<script src="templates/templates.js"></script>
+<script src="libs/pages.js"></script>
+<script src="libs/polyfill.js"></script>
+<script src="main.js"></script>
 </body>
 </html>
