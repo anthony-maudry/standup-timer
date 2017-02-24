@@ -16,6 +16,7 @@ app.use(express.static(__dirname + '/public'));
 
 // Meetings
 let meetings = {};
+let meetingsSockets = {};
 
 let pickUser = (meetingName) => {
     let meeting = meetings[meetingName],
@@ -26,11 +27,16 @@ let pickUser = (meetingName) => {
     return pickableUsers[Math.floor(Math.random() * pickableUsers.length)];
 };
 
+let getSocket = (meetingName, username) => {
+    return meetingsSockets[meetingName][username];
+};
+
 let nextTurn = (meetingName) => {
     let user = pickUser(meetingName);
 
     if (user) {
-        io.to(meetingName).emit('user turn', user);
+        let socket = getSocket(meetingName, user);
+        socket.emit('user turn', user);
     } else {
         endMeeting(meetingName);
     }
@@ -49,6 +55,10 @@ io.on('connection', (socket) => {
 
         if (meetings[socket.meeting] && meetings[socket.meeting].users.indexOf(socket.username)) {
             meetings[socket.meeting].users.slice(meetings[socket.meeting].users.indexOf(socket.username), 1);
+        }
+
+        if (meetingsSockets[socket.meeting] && meetingsSockets[socket.meeting][socket.username]) {
+            delete meetingsSockets[socket.meeting][socket.username];
         }
 
         let meeting = meetings[socket.meeting];
@@ -71,27 +81,33 @@ io.on('connection', (socket) => {
         if (!meetings[meetingName]) {
             meetings[meetingName] = {
                 name: meetingName,
-                users: [socket.username],
+                users: [],
+                sockets: {},
                 confirmed: [],
                 done: [],
                 talking: null,
                 advance: 0
             };
-        } else {
-            if (meetings[meetingName].users.indexOf(socket.username) === -1) {
-                meetings[meetingName].users.push(socket.username);
-            }
+
+            meetingsSockets[meetingName] = {};
         }
 
-        socket.meeting = meetingName;
+        if (meetings[meetingName].users.indexOf(socket.username) === -1) {
+            meetings[meetingName].users.push(socket.username);
+            meetingsSockets[meetingName][socket.username] = socket;
 
-        socket.join(meetingName);
+            socket.meeting = meetingName;
 
-        socket.emit('meeting joined', meetings[meetingName]);
+            socket.join(meetingName);
 
-        io.to(meetingName).emit('user joined', socket.username);
+            socket.emit('meeting joined', meetings[meetingName]);
 
-        io.to(meetingName).emit('update meeting', meetings[meetingName]);
+            io.to(meetingName).emit('user joined', socket.username);
+
+            io.to(meetingName).emit('update meeting', meetings[meetingName]);
+        } else {
+            socket.emit('user exists');
+        }
     };
 
     let addUser = (data) => {
@@ -130,7 +146,10 @@ io.on('connection', (socket) => {
     let userStart = () => {
         let meeting = meetings[socket.meeting];
 
-        io.to(meeting.name).emit('user talking', {user: socket.username, time: STANDUP_TIME});
+        for(let username of meeting.users) {
+            let to = meetingsSockets[meeting.name][username];
+            to.emit('user talking', {user: socket.username, time: STANDUP_TIME, me : (username === socket.username)});
+        }
 
         meeting.talking = socket.username;
 
@@ -162,7 +181,7 @@ io.on('connection', (socket) => {
         socket.emit('user added', socket.username);
     });
 
-    // when the user disconnects.. perform this
+    // when the user disconnects.. leaves the meeting
     socket.on('disconnect', () => {
         leaveMeeting();
     });

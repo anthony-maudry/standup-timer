@@ -1,63 +1,34 @@
+/*
+ Main function to run the application
+ */
 (function () {
-    // Socket events
-    let socket = io(),
-        connected = false,
-        timer = null;
+    let socket = io(),      // init socket events
+        timer = null;       // timer var
 
+    const EventHandlers = {
+        onFormSubmit: (e) => {
+            let action = e.target.getAttribute('action'), formData = new FormData(e.target), data = {};
+            e.stopPropagation();
+            e.preventDefault();
 
-    if (!String.prototype.format) {
-        String.prototype.format = function (data) {
-            return this.replace(/{(\w+)}/g, function (match, key) {
-                return typeof data[key] != 'undefined'
-                    ? data[key]
-                    : match
-                    ;
-            });
-        };
-    }
-
-    let displayPage = (page) => {
-        for (element of document.querySelectorAll(`.page:not(.${page})`)) {
-            if (!element.classList.contains('no-display')) {
-                element.classList.add('no-display');
+            for (let entry of formData.entries()) {
+                data[entry[0]] = entry[1];
             }
-        }
 
-        document.querySelector(`.page.${page}`).classList.remove('no-display');
-        if (document.querySelector(`.page.${page} .focus-in`)) {
-            document.querySelector(`.page.${page} .focus-in`).focus();
+            console.log(action, data);
+
+            socket.emit(action, data);
+        },
+
+        onClickAction: (e) => {
+            let action = e.target.dataset.action;
+            e.stopPropagation();
+            e.preventDefault();
+
+            socket.emit(action);
         }
     };
 
-    let updateContent = (placeholder, data) => {
-        console.info('update');
-        console.info(placeholder);
-        console.info(data);
-        let elements = document.querySelectorAll(`[data-content="${placeholder}"]`);
-
-        for (let element of elements) {
-            let templateName = element.dataset.template,
-                template = templateName && templates[templateName] ? templates[templateName] : '{0}',
-                loop = element.dataset.loop;
-            if (typeof loop !== 'undefined') {
-                console.log('loop');
-                element.innerHTML = '';
-                for (let item of data) {
-                    if (!(item instanceof Array) && !(item instanceof Object)) {
-                        item = [item];
-                    }
-                    element.innerHTML += template.format(item);
-                }
-            } else {
-                console.log('no loop');
-                if (!(data instanceof Array) && !(data instanceof Object)) {
-                    console.log('string');
-                    data = [data];
-                }
-                element.innerHTML = template.format(data);
-            }
-        }
-    };
 
     let makeUsers = (meeting) => {
         let users = [];
@@ -95,98 +66,110 @@
     };
 
     let userFinished = (username) => {
-        if (username === socket.username) {
-            socket.emit('user finished', username);
-        }
+        socket.emit('user finished', username);
     };
 
-    socket.on('user added', (username) => {
-        connected = true;
-        updateContent('username', username);
-        socket.username = username;
+    let userAddedStream = Rx.Observable.create(observer => {
+        socket.on('user added', data => { observer.onNext(data) });
+    });
+
+    userAddedStream.subscribe(data => {
+        pages.updateContent('username', data);
+        socket.username = data;
         // Display the welcome message
-        displayPage('meeting-choice');
+        pages.displayPage('meeting-choice');
     });
 
     // when meeting joined
-    socket.on('meeting joined', (meeting) => {
-        socket.meeting = meeting;
-        displayPage('meeting-idle');
+    let meetingJoinedStream = Rx.Observable.create(observer => {
+        socket.on('meeting joined', data => {observer.onNext(data)});
+    });
+
+    meetingJoinedStream.subscribe(data => {
+        pages.displayPage('meeting-idle');
     });
 
     // when meeting confirmed by all users display the meeting
-    socket.on('meeting confirmed', (meeting) => {
-        displayPage('meeting-confirm');
+    let meetingConfirmedStream = Rx.Observable.create(observer => {
+        socket.on('meeting confirmed', data => {observer.onNext(data)});
+    });
+
+    meetingConfirmedStream.subscribe(data => {
+        pages.displayPage('meeting-confirm');
     });
 
     // when meeting confirmed by all users display the meeting
-    socket.on('start meeting', (meeting) => {
-        // displayPage('meeting-running');
+    // DEPRECATED with "update meeting" event
+    // let startMeetingStream = Rx.Observable.create(observer => {
+    //     socket.on('start meeting', data => { observer.onNext(data) });
+    // });
+    //
+    // startMeetingStream.subscribe(data => {
+    //     pages.displayPage('meeting-running');
+    // });
+
+    // Updates the meeting display when it changes
+    let updateMeetingStream = Rx.Observable.create(observer => {
+        socket.on('update meeting', data => { observer.onNext(data)});
     });
 
-    socket.on('update meeting', (meeting) => {
+    updateMeetingStream.subscribe(meeting => {
         let users = makeUsers(meeting);
-        socket.meeting = meeting;
-        updateContent('meeting', meeting);
-        updateContent('meeting.users', users);
+        pages.updateContent('meeting', meeting);
+        pages.updateContent('meeting.users', users);
     });
 
-    socket.on('user turn', (username) => {
-        if (username === socket.username) {
-            displayPage('ready-talking');
-        }
+    // Display timer launcher when user's turn comes
+    let userTurnStream = Rx.Observable.create(observable => {
+        socket.on('user turn', data => {observable.onNext(data)});
     });
 
-    socket.on('user talking', (data) => {
-        let username = data.user, time = data.time, me = (username === socket.username);
-        updateContent('user.talking', me ? 'You' : username);
-        displayPage('user-talking');
-        if (me) {
-            document.querySelector('.done-button').classList.remove('no-display');
-        } else {
-            document.querySelector('.done-button').classList.add('no-display');
-        }
+    userTurnStream.subscribe(data => {
+        pages.displayPage('ready-talking');
+        document.querySelector('.done-button').classList.remove('no-display');
+    });
+
+    // Display the user that's talking
+    let userTalkingStream = Rx.Observable.create(observable => {
+        socket.on('user talking', data => { observable.onNext(data) });
+    });
+
+    userTalkingStream.subscribe(data => {
+        let username = data.user, time = data.time, me = data.me;
+        pages.updateContent('user.talking', me ? 'You' : username);
+        pages.displayPage('user-talking');
+        document.querySelector('.done-button').classList.add('no-display');
         userTalking(username, time);
     });
 
-    socket.on('end meeting', (meetingName) => {
-        displayPage('meeting-over');
+    // Displays the meeting end
+    let endMeetingStream = Rx.Observable.create(observable => {
+        socket.on('end meeting', data => { observable.onNext(data) });
+    });
+
+    endMeetingStream.subscribe(data => {
+        pages.displayPage('meeting-over');
     });
 
     // User events
     let forms = document.querySelectorAll('form');
     let actions = document.querySelectorAll('[data-action]');
 
-    let onFormSubmit = (e) => {
-        let action = e.target.getAttribute('action'), formData = new FormData(e.target), data = {};
-        e.stopPropagation();
-        e.preventDefault();
 
-        for (let entry of formData.entries()) {
-            data[entry[0]] = entry[1];
-        }
-
-        socket.emit(action, data);
-    };
-
-    let onClickAction = (e) => {
-        let action = e.target.dataset.action;
-        console.info('click action', action);
-
-        e.stopPropagation();
-        e.preventDefault();
-
-        socket.emit(action);
-    };
-
-    for (let form of forms) {
-        form.addEventListener('submit', onFormSubmit);
+    for(let form of forms) {
+        let formSubmitStream = Rx.Observable.fromEvent(form, 'submit');
+        formSubmitStream.subscribe(e => {
+            EventHandlers.onFormSubmit(e);
+        });
     }
 
     for (let action of actions) {
-        action.addEventListener('click', onClickAction)
+        let formSubmitStream = Rx.Observable.fromEvent(action, 'click');
+        formSubmitStream.subscribe(e => {
+            EventHandlers.onClickAction(e);
+        });
     }
 
     // start UI
-    displayPage('greetings');
+    pages.displayPage('greetings');
 })();
